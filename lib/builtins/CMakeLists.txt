@@ -164,7 +164,11 @@ set(GENERIC_SOURCES
   umodsi3.c
   umodti3.c)
 
-if(COMPILER_RT_HAS_ATOMIC_KEYWORD)
+option(COMPILER_RT_EXCLUDE_ATOMIC_BUILTIN
+  "Skip the atomic builtin (this may be needed if system headers are unavailable)"
+  Off)
+
+if(COMPILER_RT_HAS_ATOMIC_KEYWORD AND NOT COMPILER_RT_EXCLUDE_ATOMIC_BUILTIN)
   set(GENERIC_SOURCES
     ${GENERIC_SOURCES}
     atomic.c)
@@ -421,7 +425,19 @@ if (APPLE)
   add_subdirectory(macho_embedded)
   darwin_add_builtin_libraries(${BUILTIN_SUPPORTED_OS})
 else ()
-  append_string_if(COMPILER_RT_HAS_STD_C99_FLAG -std=gnu99 maybe_stdc99)
+  set(BUILTIN_CFLAGS "")
+  append_list_if(COMPILER_RT_HAS_STD_C99_FLAG -std=gnu99 BUILTIN_CFLAGS)
+
+  # These flags would normally be added to CMAKE_C_FLAGS by the llvm
+  # cmake step. Add them manually if this is a standalone build.
+  if(COMPILER_RT_STANDALONE_BUILD)
+    append_list_if(COMPILER_RT_HAS_FPIC_FLAG -fPIC BUILTIN_CFLAGS)
+    append_list_if(COMPILER_RT_HAS_FNO_BUILTIN_FLAG -fno-builtin BUILTIN_CFLAGS)
+    append_list_if(COMPILER_RT_HAS_VISIBILITY_HIDDEN_FLAG -fvisibility=hidden BUILTIN_CFLAGS)
+    if(NOT COMPILER_RT_DEBUG)
+      append_list_if(COMPILER_RT_HAS_OMIT_FRAME_POINTER_FLAG -fomit-frame-pointer BUILTIN_CFLAGS)
+    endif()
+  endif()
 
   foreach (arch ${BUILTIN_SUPPORTED_ARCH})
     if (CAN_TARGET_${arch})
@@ -440,7 +456,7 @@ else ()
                               STATIC
                               ARCHS ${arch}
                               SOURCES ${${arch}_SOURCES}
-                              CFLAGS ${maybe_stdc99}
+                              CFLAGS ${BUILTIN_CFLAGS}
                               PARENT_TARGET builtins)
     endif ()
   endforeach ()

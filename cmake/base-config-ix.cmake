@@ -8,6 +8,7 @@ check_include_file(unwind.h HAVE_UNWIND_H)
 
 # Top level target used to build all compiler-rt libraries.
 add_custom_target(compiler-rt ALL)
+add_custom_target(install-compiler-rt)
 set_target_properties(compiler-rt PROPERTIES FOLDER "Compiler-RT Misc")
 
 # Setting these variables from an LLVM build is sufficient that compiler-rt can
@@ -83,6 +84,15 @@ if(APPLE)
   option(COMPILER_RT_ENABLE_IOS "Enable building for iOS" Off)
   option(COMPILER_RT_ENABLE_WATCHOS "Enable building for watchOS - Experimental" Off)
   option(COMPILER_RT_ENABLE_TVOS "Enable building for tvOS - Experimental" Off)
+endif()
+
+if(WIN32 AND NOT MINGW AND NOT CYGWIN)
+  set(CMAKE_SHARED_LIBRARY_PREFIX_C "")
+  set(CMAKE_SHARED_LIBRARY_PREFIX_CXX "")
+  set(CMAKE_STATIC_LIBRARY_PREFIX_C "")
+  set(CMAKE_STATIC_LIBRARY_PREFIX_CXX "")
+  set(CMAKE_STATIC_LIBRARY_SUFFIX_C ".lib")
+  set(CMAKE_STATIC_LIBRARY_SUFFIX_CXX ".lib")
 endif()
 
 macro(test_targets)

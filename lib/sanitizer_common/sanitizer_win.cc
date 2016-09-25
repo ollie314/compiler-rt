@@ -235,13 +235,13 @@ bool MprotectNoAccess(uptr addr, uptr size) {
 }
 
 
-void FlushUnneededShadowMemory(uptr addr, uptr size) {
+void ReleaseMemoryToOS(uptr addr, uptr size) {
   // This is almost useless on 32-bits.
   // FIXME: add madvise-analog when we move to 64-bits.
 }
 
 void NoHugePagesInRegion(uptr addr, uptr size) {
-  // FIXME: probably similar to FlushUnneededShadowMemory.
+  // FIXME: probably similar to ReleaseMemoryToOS.
 }
 
 void DontDumpShadowMemory(uptr addr, uptr length) {
@@ -894,5 +894,17 @@ void GetMemoryProfile(fill_profile_f cb, uptr *stats, uptr stats_size) { }
 
 
 }  // namespace __sanitizer
+
+// Workaround to implement weak hooks on Windows. COFF doesn't directly support
+// weak symbols, but it does support /alternatename, which is similar. If the
+// user does not override the hook, we will use this default definition instead
+// of null.
+extern "C" void __sanitizer_print_memory_profile(int top_percent) {}
+
+#ifdef _WIN64
+#pragma comment(linker, "/alternatename:__sanitizer_print_memory_profile=__sanitizer_default_print_memory_profile") // NOLINT
+#else
+#pragma comment(linker, "/alternatename:___sanitizer_print_memory_profile=___sanitizer_default_print_memory_profile") // NOLINT
+#endif
 
 #endif  // _WIN32

@@ -13,7 +13,7 @@
 
 #include "sanitizer_common/sanitizer_platform.h"
 #include "ubsan_platform.h"
-#if CAN_SANITIZE_UB && UBSAN_CAN_USE_CXXABI
+#if CAN_SANITIZE_UB && !SANITIZER_WINDOWS
 #include "ubsan_type_hash.h"
 
 #include "sanitizer_common/sanitizer_common.h"
@@ -72,6 +72,8 @@ public:
 }
 
 namespace abi = __cxxabiv1;
+
+using namespace __sanitizer;
 
 // We implement a simple two-level cache for type-checking results. For each
 // (vptr,type) pair, a hash is computed. This hash is assumed to be globally

@@ -69,7 +69,7 @@ void FlushUnneededASanShadowMemory(uptr p, uptr size) {
     uptr page_size = GetPageSizeCached();
     uptr shadow_beg = RoundUpTo(MemToShadow(p), page_size);
     uptr shadow_end = RoundDownTo(MemToShadow(p + size), page_size);
-    FlushUnneededShadowMemory(shadow_beg, shadow_end - shadow_beg);
+    ReleaseMemoryToOS(shadow_beg, shadow_end - shadow_beg);
 }
 
 void AsanPoisonOrUnpoisonIntraObjectRedzone(uptr ptr, uptr size, bool poison) {
@@ -314,14 +314,36 @@ static void PoisonAlignedStackMemory(uptr addr, uptr size, bool do_poison) {
   }
 }
 
+void __asan_set_shadow_00(uptr addr, uptr size) {
+  REAL(memset)((void *)addr, 0, size);
+}
+
+void __asan_set_shadow_f1(uptr addr, uptr size) {
+  REAL(memset)((void *)addr, 0xf1, size);
+}
+
+void __asan_set_shadow_f2(uptr addr, uptr size) {
+  REAL(memset)((void *)addr, 0xf2, size);
+}
+
+void __asan_set_shadow_f3(uptr addr, uptr size) {
+  REAL(memset)((void *)addr, 0xf3, size);
+}
+
+void __asan_set_shadow_f5(uptr addr, uptr size) {
+  REAL(memset)((void *)addr, 0xf5, size);
+}
+
+void __asan_set_shadow_f8(uptr addr, uptr size) {
+  REAL(memset)((void *)addr, 0xf8, size);
+}
+
 void __asan_poison_stack_memory(uptr addr, uptr size) {
-  if (!__asan_option_detect_stack_use_after_scope) return;
   VReport(1, "poisoning: %p %zx\n", (void *)addr, size);
   PoisonAlignedStackMemory(addr, size, true);
 }
 
 void __asan_unpoison_stack_memory(uptr addr, uptr size) {
-  if (!__asan_option_detect_stack_use_after_scope) return;
   VReport(1, "unpoisoning: %p %zx\n", (void *)addr, size);
   PoisonAlignedStackMemory(addr, size, false);
 }
